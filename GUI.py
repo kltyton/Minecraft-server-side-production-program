@@ -2,7 +2,7 @@ import json
 import re
 import shutil
 import subprocess
-from tkinter import filedialog
+from tkinter import Tk, filedialog, messagebox, simpledialog
 import download, Formatting, Importing, transformation, run
 import os
 
@@ -17,6 +17,31 @@ options = {
     "5": "格式化(所有相关文件)",
     "6": "全自动"
 }
+
+def get_api_key():
+    config_path = 'config.json'
+    
+    api_key = None
+    if os.path.exists(config_path):
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = json.load(f)
+            api_key = config.get('api-key')
+    if not api_key:
+        api_key = simpledialog.askstring("输入API密钥", "请输入CurseForge的API密钥:")
+        
+    return api_key
+
+def cruseforge():
+    root = Tk()
+    root.withdraw()
+    use_curseforge = messagebox.askyesno("选择API", "是否使用CurseForge的API？")
+    api_key = None
+    if use_curseforge:
+        api_key = get_api_key()
+        if not api_key:
+            print("未提供CurseForge的API密钥，程序退出")
+            return
+    return use_curseforge, api_key
 
 def clear(): 
     os.system('cls')
@@ -50,8 +75,8 @@ def choice_java():
             print("已取消以该java运行程序")
     return java_path, memory_size
 
-def initialization(java_path, memory_size):
-    unknown_folder = "服务端/需要人工排查的mod文件"
+def initialization(java_path, memory_size, use_curseforge, api_key):
+    unknown_folder = "需要人工排查的mod文件"
     os.makedirs(unknown_folder, exist_ok=True)
     
     #选择客户端
@@ -60,8 +85,12 @@ def initialization(java_path, memory_size):
     if not mods_folder:
         print("未选择文件夹，程序退出")
         return
-    client_folder = "服务端/客户端缓存文件夹"
-    shutil.copytree(mods_folder, client_folder, dirs_exist_ok=True)
+    client_folder = "客户端缓存文件夹"
+    if not os.path.exists(client_folder):
+        shutil.copytree(mods_folder, client_folder, dirs_exist_ok=True)
+    else:
+        print("缓存客户端存在，无需复制")
+    
     json_name = os.path.basename(mods_folder)
     with open(mods_folder + "/" + json_name + '.json') as f:
         clinet_data = json.load(f)
@@ -100,19 +129,25 @@ def initialization(java_path, memory_size):
         "mod加载器版本": loader_version,
         "fabric安装器版本": fa_setup_version,
         "选择的java路径": java_path,
-        "分配的内存": memory_size
+        "分配的内存": memory_size,
+        "是否使用cruseforge_api": use_curseforge,
+        "cruseforge_api-key": api_key
         }
-    with open("服务端/客户端mod信息.json", "w", encoding='utf-8') as json_file:
+    with open("客户端mod信息.json", "w", encoding='utf-8') as json_file:
         json.dump(data, json_file, ensure_ascii=False, indent=4)
-        
-    #设置工作路径
-    os.chdir("服务端")
     
 def main_menu():
-    java_path, memory_size = choice_java()
-    clear()
-    initialization(java_path, memory_size)
-    clear()
+    woker_folder = "服务端"
+    os.makedirs(woker_folder, exist_ok=True)
+    os.chdir("服务端")
+    if not os.path.exists("客户端mod信息.json"):
+        java_path, memory_size = choice_java()
+        clear()
+        use_curseforge, api_key = cruseforge()
+        initialization(java_path, memory_size, use_curseforge, api_key)
+        clear()
+    else:
+        print("初始化信息存在，无需初始化")
     while True:
         print("-此工具由B站UP主: Fufu超爱大米制作-工具完全免费")
         print("-本工具针对于我的世界客户端整合包转化为服务端整合包")

@@ -5,12 +5,12 @@ import struct
 import requests
 import json
 from tqdm import tqdm
-from tkinter import Tk, filedialog, messagebox, simpledialog
+
+import GUI
 
 # 初始化
 unknown_mods = []
 hash_dict = []
-log_entries = []
 side_translation = {
     "required": "必需",
     "optional": "可选",
@@ -18,12 +18,11 @@ side_translation = {
 }
 modrinth_base_url = "https://api.modrinth.com/v2"
 curseforge_base_url = "https://api.curseforge.com/v1"
-unknown_folder = "服务端/需要人工排查的mod文件"
+unknown_folder = "需要人工排查的mod文件"
 
-# 初始化日志
-def log(message):
-    print(message)
-    log_entries.append(message)
+def clear(): 
+    os.system('cls')
+    print("加载中.....请等待......")
 
 #curseforge哈希值解密(murmurhash2,seed = 1)
 def read_file_bytes(file_path):
@@ -80,7 +79,7 @@ def get_mod_info_curseforge(hash_value, use_curseforge, api_key=None):
             mod_info = response.json()['data']
             return mod_info
         else:
-            log(f"获取模组信息时发生HTTP错误，Hash值: {hash_value}，错误: {response.status_code}")
+            print(f"获取模组信息时发生HTTP错误，Hash值: {hash_value}，错误: {response.status_code}")
             return None
 
 def is_server_pack(mod_info):
@@ -102,13 +101,11 @@ def get_mod_info(hash_value):
         project_id = mod_info.get('project_id')
         return mod_info, project_id
     except requests.exceptions.HTTPError as http_err:
-        log(f"获取模组信息时发生HTTP错误，Hash值: {hash_value}，错误: {http_err}")
+        print(f"获取模组信息时发生HTTP错误，Hash值: {hash_value}，错误: {http_err}")
         return None, None
     except Exception as err:
-        log(f"获取模组信息时发生其他错误，Hash值: {hash_value}，错误: {err}")
+        print(f"获取模组信息时发生其他错误，Hash值: {hash_value}，错误: {err}")
         return None, None
-    finally:
-        os.system('cls')
 
 #获得mod当前项目信息
 def get_project_info(mod_file, project_id):
@@ -119,9 +116,9 @@ def get_project_info(mod_file, project_id):
         response.raise_for_status()
         return response.json()
     except requests.exceptions.HTTPError as http_err:
-        log(f"获取模组信息时发生HTTP错误，ID: {mod_file}，错误: {http_err}")
+        print(f"获取模组信息时发生HTTP错误，ID: {mod_file}，错误: {http_err}")
     except Exception as err:
-        log(f"获取模组信息时发生其他错误，ID: {mod_file}，错误: {err}")
+        print(f"获取模组信息时发生其他错误，ID: {mod_file}，错误: {err}")
     return None
 
 # 通过哈希数值区分服务端客户端（modrinth）
@@ -142,53 +139,29 @@ def process_mod_file(mods_folder, mod_file, project_id, hash_value):
             if os.path.exists(source_path):
                 try:
                     shutil.move(source_path, target_path)
-                    log(f"已将 {mod_file} 移动到 {target_folder}")
+                    print(f"已将 {mod_file} 移动到 {target_folder}")
                     hash_dict.append({"文件名": mod_file, "Hash值": hash_value, "项目ID": project_id, "客户端":client_side_cn, "服务端":server_side_cn})
                 except Exception as e:
-                    log(f"移动文件 {mod_file} 时发生错误: {e}")
-                finally:
-                    os.system('cls')
+                    print(f"移动文件 {mod_file} 时发生错误: {e}")
             else:
-                log(f"文件 {source_path} 不存在")
-                os.system('cls')
+                print(f"文件 {source_path} 不存在")
         else:
-            log(f"模组 {mod_file} 的客户端或服务端环境未知: client_side={client_side}, server_side={server_side}")
+            print(f"模组 {mod_file} 的客户端或服务端环境未知: client_side={client_side}, server_side={server_side}")
             hash_dict.append({"文件名": mod_file, "Hash值": hash_value, "项目ID": project_id, "客户端":client_side_cn, "服务端":server_side_cn})
-            os.system('cls')
     else:
-        log(f"未找到模组 {mod_file} 的信息")
+        print(f"未找到模组 {mod_file} 的信息")
         unknown_mods.append(mod_file)
-        log(f"未知的mod: {mod_file}")
+        print(f"未知的mod: {mod_file}")
         source_path = os.path.join(mods_folder, mod_file)
         target_path = os.path.join(unknown_folder, mod_file)
         if os.path.exists(source_path):
             try:
                 shutil.move(source_path, target_path)
-                log(f"已将 {mod_file} 移动到 {unknown_folder}")
+                print(f"已将 {mod_file} 移动到 {unknown_folder}")
             except Exception as e:
-                log(f"移动未知文件 {mod_file} 时发生错误: {e}")
-            finally:
-                os.system('cls')
+                print(f"移动未知文件 {mod_file} 时发生错误: {e}")
         else:
-            log(f"文件 {source_path} 不存在")
-
-# 输入forge密匙
-def get_api_key():
-    config_path = 'config.json'
-    api_key = None
-
-    if os.path.exists(config_path):
-        with open(config_path, 'r', encoding='utf-8') as f:
-            config = json.load(f)
-            api_key = config.get('api-key')
-
-    if not api_key:
-        api_key = simpledialog.askstring("输入API密钥", "请输入CurseForge的API密钥:")
-        if api_key:
-            with open(config_path, 'w', encoding='utf-8') as f:
-                json.dump({'api-key': api_key}, f, ensure_ascii=False, indent=4)
-
-    return api_key
+            print(f"文件 {source_path} 不存在")
 
 # 计算哈希值
 def calculate_hash(file_path):
@@ -198,19 +171,9 @@ def calculate_hash(file_path):
             for chunk in iter(lambda: f.read(4096), b""):
                 hasher.update(chunk)
     except IOError as e:
-        log(f"无法读取文件 {file_path}: {e}")
+        print(f"无法读取文件 {file_path}: {e}")
         return None
     return hasher.hexdigest()
-
-#选择客户端文件夹
-def select_client_folder():
-    mods_folder = filedialog.askdirectory(title="选择客户端文件夹")
-    if mods_folder:
-        return mods_folder
-    if not mods_folder:
-        log("未选择文件夹，程序退出")
-        return
-    log(f"选择客户端文件夹: {mods_folder}")
 
 #获得mods文件夹所有文件
 def get_mods_files(mods_folder):
@@ -222,7 +185,7 @@ def get_mods_files(mods_folder):
 def code(mod_files, mods_folder, use_curseforge, api_key):
     for mod_file in tqdm(mod_files, desc="处理模组文件"):
         file_path = os.path.join(mods_folder, mod_file)
-        log(f"正在处理模组: {mod_file}")
+        print(f"正在处理模组: {mod_file}")
         #MODRINTH
         if not use_curseforge:
             hash_value = calculate_hash(file_path)
@@ -230,10 +193,19 @@ def code(mod_files, mods_folder, use_curseforge, api_key):
                 mod_info, project_id = get_mod_info(hash_value)
                 if mod_info:
                     process_mod_file(mods_folder, mod_file, project_id, hash_value)
+                    clear()
+                elif mod_info is None:
+                    shutil.move(file_path, unknown_folder)
+                    hash_dict.append({"文件名": mod_file, "Hash值": hash_value, "客户端":"未知", "服务端":"未知"})
+                    clear()
+                    
         #FORGE
         elif use_curseforge:
             hash_value = get_curseforge_hash(file_path)
             mod_info = get_mod_info_curseforge(hash_value, use_curseforge, api_key)
+            if mod_info is None:
+                shutil.move(file_path, unknown_folder)
+                hash_dict.append({"文件名": mod_file, "Hash值": hash_value, "客户端":"未知", "服务端":"未知"})
             is_server = is_server_pack(mod_info)
             target_server_folder = "服务端mod"
             target_client_folder = "客户端mod"
@@ -245,97 +217,64 @@ def code(mod_files, mods_folder, use_curseforge, api_key):
             if is_server:
                 shutil.move(file_path, target_server_path)
                 hash_dict.append({"文件名": mod_file, "Hash值": hash_value, "客户端":not is_server, "服务端":is_server})
+                clear()
             elif not is_server:
                 shutil.move(file_path, target_client_path)
                 hash_dict.append({"文件名": mod_file, "Hash值": hash_value, "客户端":not is_server, "服务端":is_server})
+                clear()
             else:
                 shutil.move(file_path, unknown_folder)
                 hash_dict.append({"文件名": mod_file, "Hash值": hash_value, "客户端":"未知", "服务端":"未知"})
+                clear()
 
-def secondary(mods_folder, use_curseforge):
-    #没使用curseforge APi
+def secondary(unknown_folder, use_curseforge):
     if not use_curseforge:
-        mod_files = get_mods_files(mods_folder)
-        if not mod_files:
-            log("使用modrinth的API区分mod完成")
-            log("但仍有以下mod未能获取到信息（它们可能来自于CurseForge或者自制mod，而你未使用CurseForge的api）")
-            log(mod_files)
-            log("你可以手动排除或者使用CurseForge进行查询")
-            log("PS:如果你实在没有CurseForgeAPI密匙或者无法申请可以私信FUFU借用一下")
+        unknown_files = get_mods_files(unknown_folder)
+        if unknown_files is not None:
+            print("使用modrinth的API区分mod完成")
+            print("但仍有以下mod未能获取到信息（它们可能来自于CurseForge或者自制mod，而你未使用CurseForge的api）")
+            for file in unknown_files:
+                print(file)
+            print("你可以手动排除或者使用CurseForge进行查询")
+            print("PS:如果你实在没有CurseForgeAPI密匙或者无法申请可以私信FUFU借用一下")
             choice = input("输入y使用CurseForge进行查询区分mods文件,其他键返回主菜单并输出人工区分mod列表：")
             if choice == "y":
-                api_key = get_api_key()
-                if not api_key:
-                    log("未提供CurseForge的API密钥，程序退出")
-                    return
-                else:
-                    use_curseforge = True
-                    code(mod_files, mods_folder, use_curseforge, api_key)
-            else:
-                for mod_file in tqdm(mod_files, desc="处理模组文件"):
-                    unknown_mods.append(mod_file)
-                    source_path = os.path.join(mods_folder, mod_file)
-                    target_path = os.path.join(unknown_folder, mod_file)
-                    if os.path.exists(source_path):
-                        try:
-                            shutil.move(source_path, target_path)
-                            log(f"已将 {mod_file} 移动到 {unknown_folder}")
-                            os.system('cls')
-                        except Exception as e:
-                            log(f"移动未知文件 {mod_file} 时发生错误: {e}")
-                            os.system('cls')
-                    else:
-                        log(f"文件 {source_path} 不存在")
-                        os.system('cls')
+                use_curseforge, api_key = GUI.cruseforge()
+                code(unknown_files, unknown_folder, use_curseforge, api_key)
 # 主函数
 def main():
     print("开始执行")
-    #选择forge/fabric
-    root = Tk()
-    root.withdraw()
-    use_curseforge = messagebox.askyesno("选择API", "是否使用CurseForge的API？")
-    api_key = None
-    if use_curseforge:
-        api_key = get_api_key()
-        if not api_key:
-            log("未提供CurseForge的API密钥，程序退出")
-            return
-
-    #选择客户端文件夹
-    log("请选择客户端整合包文件夹")
-    mods_folder = select_client_folder()
+    os.chdir("服务端")
     client_folder = "客户端缓存文件夹"
-    shutil.copytree(mods_folder, client_folder, dirs_exist_ok=True)
-    log("成功复制")
-    os.system('cls')
-
     #获得mods文件夹所有文件
     mods_folder = os.path.join(client_folder, 'mods')
     mod_files = get_mods_files(mods_folder)
-
+    with open('客户端mod信息.json','r', encoding='utf-8') as f:
+        data = json.load(f)
+    use_curseforge = data.get('是否使用cruseforge_api')
+    api_key = None
+    if use_curseforge:
+        api_key = data.get('cruseforge_api-key')
     #核心代码
     code(mod_files, mods_folder, use_curseforge, api_key)
     
-    script_path = "服务端"
+    print("执行第一次移动")
+    target_path = os.getcwd()
+    shutil.move(mods_folder, target_path)
     
-    log("执行第一次移动")
-    move(script_path, mods_folder)
-
+    #第二次判断
+    secondary(unknown_folder, use_curseforge)
+    
     # 将错误文件信息（需要人工排查）写入JSON文件
     with open('需要人工排查mod列表.json', 'w', encoding='utf-8') as json_file:
         json.dump(unknown_mods, json_file, ensure_ascii=False, indent=4)
-        log("需要人工排查mod列表信息已写入 需要人工排查mod列表.json 文件")
+        print("需要人工排查mod列表信息已写入 需要人工排查mod列表.json 文件")
 
     # 将哈希值信息写入JSON文件
     with open('MOD信息.json', 'w', encoding='utf-8') as json_file:
         json.dump(hash_dict, json_file, ensure_ascii=False, indent=4)
-        log("哈希值信息已写入 哈希信息.json 文件")
-
-    # 保存日志
-    with open('log.json', 'w', encoding='utf-8') as f:
-        json.dump(log_entries, f, ensure_ascii=False, indent=4)
-    log("日志已保存到 log.json")
-    log("执行完毕")
+        print("哈希值信息已写入 MOD信息.json 文件")
+    print("执行完毕")
 
 if __name__ == "__main__":
     main()
