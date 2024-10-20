@@ -150,7 +150,6 @@ def process_mod_file(mods_folder, mod_file, project_id, hash_value):
             hash_dict.append({"文件名": mod_file, "Hash值": hash_value, "项目ID": project_id, "客户端":client_side_cn, "服务端":server_side_cn})
     else:
         print(f"未找到模组 {mod_file} 的信息")
-        unknown_mods.append(mod_file)
         print(f"未知的mod: {mod_file}")
         source_path = os.path.join(mods_folder, mod_file)
         target_path = os.path.join(unknown_folder, mod_file)
@@ -158,6 +157,7 @@ def process_mod_file(mods_folder, mod_file, project_id, hash_value):
             try:
                 shutil.move(source_path, target_path)
                 print(f"已将 {mod_file} 移动到 {unknown_folder}")
+                unknown_mods.append(mod_file)
             except Exception as e:
                 print(f"移动未知文件 {mod_file} 时发生错误: {e}")
         else:
@@ -196,6 +196,7 @@ def code(mod_files, mods_folder, use_curseforge, api_key):
                     clear()
                 elif mod_info is None:
                     shutil.move(file_path, unknown_folder)
+                    unknown_mods.append(mod_file)
                     hash_dict.append({"文件名": mod_file, "Hash值": hash_value, "客户端":"未知", "服务端":"未知"})
                     clear()
                     
@@ -206,6 +207,7 @@ def code(mod_files, mods_folder, use_curseforge, api_key):
             if mod_info is None:
                 shutil.move(file_path, unknown_folder)
                 hash_dict.append({"文件名": mod_file, "Hash值": hash_value, "客户端":"未知", "服务端":"未知"})
+                unknown_mods.append(mod_file)
             is_server = is_server_pack(mod_info)
             target_server_folder = "服务端mod"
             target_client_folder = "客户端mod"
@@ -225,6 +227,7 @@ def code(mod_files, mods_folder, use_curseforge, api_key):
             else:
                 shutil.move(file_path, unknown_folder)
                 hash_dict.append({"文件名": mod_file, "Hash值": hash_value, "客户端":"未知", "服务端":"未知"})
+                unknown_mods.append(mod_file)
                 clear()
 
 def secondary(unknown_folder, use_curseforge):
@@ -240,7 +243,12 @@ def secondary(unknown_folder, use_curseforge):
             choice = input("输入y使用CurseForge进行查询区分mods文件,其他键返回主菜单并输出人工区分mod列表：")
             if choice == "y":
                 use_curseforge, api_key = GUI.cruseforge()
-                code(unknown_files, unknown_folder, use_curseforge, api_key)
+                if use_curseforge == True and api_key is not None: 
+                    code(unknown_files, unknown_folder, use_curseforge, api_key)
+                else: 
+                    return
+            else: 
+                return
 # 主函数
 def main():
     print("开始执行")
@@ -260,7 +268,7 @@ def main():
     
     print("执行第一次移动")
     target_path = os.getcwd()
-    shutil.move(mods_folder, target_path)
+    shutil.move(mods_folder, target_path, copy_function=shutil.move)
     
     #第二次判断
     secondary(unknown_folder, use_curseforge)
