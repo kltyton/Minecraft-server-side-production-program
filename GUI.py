@@ -3,7 +3,7 @@ import re
 import shutil
 import subprocess
 from tkinter import Tk, filedialog, messagebox, simpledialog
-import download, Formatting, Importing, transformation, run
+import download, formatting, Importing, transformation, run
 import os
 
 title = "Fufu超爱大米制作-一键制作服务端"
@@ -171,14 +171,14 @@ def main_menu():
             elif choice == "4":
                 Importing.main()
             elif choice == "5":
-                Formatting.main()
+                formatting.main()
             elif choice == "6":
                 run.main()
             elif choice == "7":
                 download.main()
                 transformation.main()
                 Importing.main()
-                Formatting.main()
+                formatting.main()
             input("按回车键返回主菜单...")
         else:
             print("无效的选项，请重新选择。")

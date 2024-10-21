@@ -230,7 +230,7 @@ def code(mod_files, mods_folder, use_curseforge, api_key):
                 unknown_mods.append(mod_file)
                 clear()
 
-def secondary(unknown_folder, use_curseforge):
+def secondary(unknown_folder, use_curseforge, target_path):
     if not use_curseforge:
         unknown_files = get_mods_files(unknown_folder)
         if unknown_files is not None:
@@ -245,6 +245,10 @@ def secondary(unknown_folder, use_curseforge):
                 use_curseforge, api_key = GUI.cruseforge()
                 if use_curseforge == True and api_key is not None: 
                     code(unknown_files, unknown_folder, use_curseforge, api_key)
+                    unknown_folder_client = unknown_folder + "/客户端"
+                    unknown_folder_server = unknown_folder + "/服务端"
+                    shutil.move(unknown_folder_client, target_path + "/mods", copy_function=shutil.move)
+                    shutil.move(unknown_folder_server, target_path + "/mods", copy_function=shutil.move)
                 else: 
                     return
             else: 
@@ -271,7 +275,7 @@ def main():
     shutil.move(mods_folder, target_path, copy_function=shutil.move)
     
     #第二次判断
-    secondary(unknown_folder, use_curseforge)
+    secondary(unknown_folder, use_curseforge, target_path)
     
     # 将错误文件信息（需要人工排查）写入JSON文件
     with open('需要人工排查mod列表.json', 'w', encoding='utf-8') as json_file:
